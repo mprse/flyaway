@@ -63,3 +63,4 @@ optional arguments:
   --sleep SLEEP  Delay between reads in minutes (min 1 minute, default 5 minutes)
 ```
 
+![image](https://github.com/mprse/flyaway/assets/30721012/0f3f0df4-cf93-4ce4-88c0-568ec6540e68)
