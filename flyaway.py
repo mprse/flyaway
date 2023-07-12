@@ -54,6 +54,7 @@ class Flight_Reader:
     def get_from_web(self, departure : str, destination : str, date : str):
         url = "https://www.ryanair.com/gb/en/trip/flights/select?adults=1&teens=0&children=0&infants=0&dateOut={to_date}&dateIn=&isConnectedFlight=false&discount=0&isReturn=false&promoCode=&originIata={ffrom}&destinationIata={fto}&tpAdults=1&tpTeens=0&tpChildren=0&tpInfants=0&tpStartDate={to_date}&tpEndDate=&tpDiscount=0&tpPromoCode=&tpOriginIata={ffrom}&tpDestinationIata={fto}"
         url = url.format(ffrom = departure, fto = destination, to_date = date)
+        print(url)
 
         # return flights:
         #url = "https://www.ryanair.com/gb/en/trip/flights/select?adults=1&teens=0&children=0&infants=0&dateOut={to_date}&dateIn={from_date}&isConnectedFlight=false&isReturn=true&discount=1&promoCode=&originIata={ffrom}&destinationIata={fto}&tpAdults=1&tpTeens=0&tpChildren=0&tpInfants=0&tpStartDate={to_date}&tpEndDate={from_date}&tpDiscount=0&tpPromoCode=&tpOriginIata={ffrom}&tpDestinationIata={fto}"
@@ -168,6 +169,20 @@ class Travel_Info:
 
         return txt
 
+    def push(self, url : str):
+        try:
+            r = requests.get(url)
+        except requests.exceptions.RequestException as e:
+            print(e.response)
+
+            return False
+
+        if not r.ok:
+            return False
+
+        print(r.content)
+        return json.loads(r.content)
+
 def get_flights(departure, day):
 
     url = "https://services-api.ryanair.com/farfnd/3/oneWayFares?&departureAirportIataCode={dep}&language=en&limit=100&market=en-gb&offset=0&outboundDepartureDateFrom={date}&outboundDepartureDateTo={date}&priceValueTo=150"
@@ -237,6 +252,18 @@ def monitor_two_way(departure : str, destination : str, to_date : str, from_date
             travel_info  = Travel_Info(departure, destination, f_to_date_str, f_from_date_str, method)
             if travel_info.read() == True:
                 print(travel_info.txt())
+                to_price_json = '{\"prices\": [\"' + str(travel_info._to._price) + '\", \"' + travel_info._to._curr + '\", \"' + travel_info._to._timestamp + '\"]}'
+                from_price_json = '{\"prices\": [\"' + str(travel_info._from._price) + '\", \"' + travel_info._from._curr + '\", \"' + travel_info._from._timestamp + '\"]}'
+
+                url = 'http://www.flyaway.cal24.pl/insert.php?to_port={to_port}&to_date={to_date}&to_price={to_price}&from_port={from_port}&from_date={from_date}&from_price={from_price}'
+                url = url.format(to_port = travel_info._to._dep, to_date = travel_info._to_date, to_price = to_price_json,
+                                 from_port = travel_info._from._dep, from_date = travel_info._from_date, from_price = from_price_json)
+
+                print(url)
+                status = travel_info.push(url)
+                if not status == False:
+                     print(status['status'])
+
             f_to = f_to + datetime.timedelta(days = 7)
             f_from = f_from + datetime.timedelta(days = 7)
         if delay == 0:
